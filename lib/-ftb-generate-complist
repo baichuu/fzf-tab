@@ -1,6 +1,6 @@
 #!/hint/zsh
 
-local dsuf dpre k _v filepath filename icon_key group_name first_word show_group default_color prefix bs=$'\b'
+local dsuf dpre k _v filepath filename icon_key group_name first_word show_group default_color prefix icon_separator bs=$'\b'
 local folder_icon symlink_icon executable_icon file_icon completion_icon command_icon alias_icon builtin_icon function_icon
 local option_icon variable_icon process_icon history_icon user_icon host_icon signal_icon correction_icon value_icon
 local -a list_colors group_colors tcandidates reply match mbegin mend file_icons_by_name file_icons_by_extension
@@ -16,6 +16,7 @@ local -A word_map=() icons_by_name=() icons_by_extension=()
 -ftb-zstyle -s symlink-icon symlink_icon || symlink_icon=''
 -ftb-zstyle -s executable-icon executable_icon || executable_icon=''
 -ftb-zstyle -s file-icon file_icon || file_icon=''
+-ftb-zstyle -s icon-separator icon_separator || icon_separator=' '
 -ftb-zstyle -s completion-icon completion_icon || completion_icon=''
 -ftb-zstyle -s command-icon command_icon || command_icon=$completion_icon
 -ftb-zstyle -s alias-icon alias_icon || alias_icon=$completion_icon
@@ -121,6 +122,12 @@ else
         *(command|subcommand)*)          dpre=$command_icon ;;
       esac
     fi
+
+    # Icons may come from user zstyles or generated devicon maps. Normalize any
+    # legacy trailing spaces, then insert exactly one configurable separator
+    # between every icon and its candidate name.
+    dpre=${dpre%%[[:space:]]#}
+    [[ -n $dpre ]] && dpre+=$icon_separator
 
     # add color to description if they have group index
     if (( $+v[group] )); then
