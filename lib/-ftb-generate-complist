@@ -1,15 +1,23 @@
 #!/hint/zsh
 
-local dsuf dpre k _v filepath first_word show_group default_color prefix bs=$'\b'
-local -a list_colors group_colors tcandidates reply match mbegin mend
+local dsuf dpre k _v filepath filename icon_key first_word show_group default_color prefix folder_icon symlink_icon executable_icon file_icon bs=$'\b'
+local -a list_colors group_colors tcandidates reply match mbegin mend file_icons_by_name file_icons_by_extension
 local -i  same_word=1 colorful=0
 local -Ua duplicate_groups=()
-local -A word_map=()
+local -A word_map=() icons_by_name=() icons_by_extension=()
 
 (( $#_ftb_compcap == 0 )) && return
 
 -ftb-zstyle -s show-group show_group || show_group=full
 -ftb-zstyle -s default-color default_color || default_color=''
+-ftb-zstyle -s folder-icon folder_icon || folder_icon=''
+-ftb-zstyle -s symlink-icon symlink_icon || symlink_icon=''
+-ftb-zstyle -s executable-icon executable_icon || executable_icon=''
+-ftb-zstyle -s file-icon file_icon || file_icon=''
+-ftb-zstyle -a file-icons-by-name file_icons_by_name || file_icons_by_name=()
+-ftb-zstyle -a file-icons-by-extension file_icons_by_extension || file_icons_by_extension=()
+icons_by_name=("${(@)file_icons_by_name}")
+icons_by_extension=("${(@)file_icons_by_extension}")
 -ftb-zstyle -s prefix prefix || {
   zstyle -m ':completion:*:descriptions' format '*' && prefix='·'
 }
@@ -42,9 +50,28 @@ else
     # add character and color to describe the type of the files
     dsuf='' dpre=''
     if (( $+v[realdir] )); then
-      filepath=$v[realdir]${(Q)v[word]}
+      filename=${(Q)v[word]}
+      filepath=$v[realdir]$filename
       if [[ -d $filepath ]]; then
         dsuf=/
+        dpre=$folder_icon
+      elif [[ -L $filepath ]]; then
+        dpre=$symlink_icon
+      else
+        dpre=$file_icon
+        icon_key=${(L)filename}
+        if (( $+icons_by_name[$icon_key] )); then
+          dpre=$icons_by_name[$icon_key]
+        else
+          while [[ $icon_key == *.* ]]; do
+            icon_key=${icon_key#*.}
+            if (( $+icons_by_extension[$icon_key] )); then
+              dpre=$icons_by_extension[$icon_key]
+              break
+            fi
+          done
+        fi
+        [[ -x $filepath && -z $dpre ]] && dpre=$executable_icon
       fi
       # add color and resolve symlink if have list-colors
       # detail: http://zsh.sourceforge.net/Doc/Release/Zsh-Modules.html#The-zsh_002fcomplist-Module
