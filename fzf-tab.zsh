@@ -244,12 +244,25 @@ builtin unalias -m '[^+]*'
 }
 
 _fzf-tab-apply() {
-  local choice bs=$'\2'
+  local choice candidate icon_separator bs=$'\2'
+  -ftb-zstyle -s icon-separator icon_separator || icon_separator=' '
   for choice in "$_ftb_choices[@]"; do
     local match=${_ftb_compcap[(r)${(b)choice}$bs*]}
     if [[ -z $match ]]; then
       local qchoice=${(q)choice}
       match=${_ftb_compcap[(r)${(b)qchoice}$bs*]}
+    fi
+    # The display field may start with icon-separator. Keep that spacing in
+    # fzf, but remove it for the fallback lookup against the raw completion
+    # key. Trying the unmodified choice first preserves filenames that really
+    # begin with spaces.
+    if [[ -z $match && -n $icon_separator && $choice == ${icon_separator}* ]]; then
+      candidate=${choice#$icon_separator}
+      match=${_ftb_compcap[(r)${(b)candidate}$bs*]}
+      if [[ -z $match ]]; then
+        local qcandidate=${(q)candidate}
+        match=${_ftb_compcap[(r)${(b)qcandidate}$bs*]}
+      fi
     fi
     [[ -z $match ]] && continue
     local -A v=("${(@0)${match#*$bs}}")
