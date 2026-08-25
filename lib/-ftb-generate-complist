@@ -1,6 +1,8 @@
 #!/hint/zsh
 
-local dsuf dpre k _v filepath filename icon_key first_word show_group default_color prefix folder_icon symlink_icon executable_icon file_icon bs=$'\b'
+local dsuf dpre k _v filepath filename icon_key group_name first_word show_group default_color prefix bs=$'\b'
+local folder_icon symlink_icon executable_icon file_icon completion_icon command_icon alias_icon builtin_icon function_icon
+local option_icon variable_icon process_icon history_icon user_icon host_icon signal_icon correction_icon value_icon
 local -a list_colors group_colors tcandidates reply match mbegin mend file_icons_by_name file_icons_by_extension
 local -i  same_word=1 colorful=0
 local -Ua duplicate_groups=()
@@ -14,6 +16,20 @@ local -A word_map=() icons_by_name=() icons_by_extension=()
 -ftb-zstyle -s symlink-icon symlink_icon || symlink_icon=''
 -ftb-zstyle -s executable-icon executable_icon || executable_icon=''
 -ftb-zstyle -s file-icon file_icon || file_icon=''
+-ftb-zstyle -s completion-icon completion_icon || completion_icon=''
+-ftb-zstyle -s command-icon command_icon || command_icon=$completion_icon
+-ftb-zstyle -s alias-icon alias_icon || alias_icon=$completion_icon
+-ftb-zstyle -s builtin-icon builtin_icon || builtin_icon=$completion_icon
+-ftb-zstyle -s function-icon function_icon || function_icon=$completion_icon
+-ftb-zstyle -s option-icon option_icon || option_icon=$completion_icon
+-ftb-zstyle -s variable-icon variable_icon || variable_icon=$completion_icon
+-ftb-zstyle -s process-icon process_icon || process_icon=$completion_icon
+-ftb-zstyle -s history-icon history_icon || history_icon=$completion_icon
+-ftb-zstyle -s user-icon user_icon || user_icon=$completion_icon
+-ftb-zstyle -s host-icon host_icon || host_icon=$completion_icon
+-ftb-zstyle -s signal-icon signal_icon || signal_icon=$completion_icon
+-ftb-zstyle -s correction-icon correction_icon || correction_icon=$completion_icon
+-ftb-zstyle -s value-icon value_icon || value_icon=$completion_icon
 -ftb-zstyle -a file-icons-by-name file_icons_by_name || file_icons_by_name=()
 -ftb-zstyle -a file-icons-by-extension file_icons_by_extension || file_icons_by_extension=()
 icons_by_name=("${(@)file_icons_by_name}")
@@ -84,6 +100,26 @@ else
       if [[ $options[list_types] == off ]]; then
         dsuf=''
       fi
+    else
+      # Non-file completions have no realdir. Use their completion group to
+      # select a semantic icon, with completion-icon as a universal fallback.
+      dpre=$completion_icon
+      (( $+v[group] )) && group_name=${(L)_ftb_groups[$v[group]]}
+      case $group_name in
+        *alias*)                         dpre=$alias_icon ;;
+        *(builtin|built-in|reserved)*)   dpre=$builtin_icon ;;
+        *(function|subroutine)*)         dpre=$function_icon ;;
+        *(option|flag|switch)*)          dpre=$option_icon ;;
+        *(parameter|variable|environment)*) dpre=$variable_icon ;;
+        *(process|job)*)                 dpre=$process_icon ;;
+        *histor*)                        dpre=$history_icon ;;
+        *(user|account)*)                dpre=$user_icon ;;
+        *(host|machine)*)                dpre=$host_icon ;;
+        *signal*)                        dpre=$signal_icon ;;
+        *(correction|original)*)         dpre=$correction_icon ;;
+        *(value|argument|operand)*)       dpre=$value_icon ;;
+        *(command|subcommand)*)          dpre=$command_icon ;;
+      esac
     fi
 
     # add color to description if they have group index
